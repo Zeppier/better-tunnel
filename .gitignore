@@ -1,0 +1,7 @@
+build/*
+dist/*
+__pycache__/
+kafkatunnel.egg-info/*
+*.pyc
+.idea
+
