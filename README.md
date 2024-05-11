@@ -1,6 +1,6 @@
 
-better-tunnel.py
-============
+# better-tunnel
+
 Access any address under private VPCs using SSH tunneling.
 
 Requirements
@@ -24,5 +24,3 @@ Usage
 ```bash
 $ better-tunnel jumper@localhost 2222 jumper env.internal.clickhouse.cloud:8443
 ```
-
-# better-tunnel
