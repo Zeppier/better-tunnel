@@ -5,24 +5,29 @@ import subprocess
 
 from instance import RetrieveInstanceIPs
 
+
 @click.command()
 @click.argument('jump_host')
 @click.argument('jump_port')
 @click.argument('identity')
 @click.argument('addresses')
-def cli(jump_host, jump_port, identity, addresses):
+@click.argument('trusted', default=False)
+def cli(jump_host, jump_port, identity, addresses, trusted):
     instances = []
     click.echo(' * resolving ip\'s ...')
     man = RetrieveInstanceIPs()
     for address in addresses.split(','):
         instances += man.get_ips(address)
-    connect(jump_host, jump_port, identity, instances)
+    connect(jump_host, jump_port, identity, instances, trusted)
 
 
-def connect(jump_host, jump_port, identity, instances):
+def connect(jump_host, jump_port, identity, instances, trusted):
     print_instances(instances)
     add_local_interfaces(instances)
-    connect_ssh_tunnel(jump_host, jump_port, identity, instances)
+    if trusted:
+        connect_ssh_tunnel_trusted_channel(jump_host, jump_port, identity, instances)
+    else:
+        connect_ssh_tunnel(jump_host, jump_port, identity, instances)
     remove_local_interfaces(instances)
 
 
@@ -55,9 +60,25 @@ def print_instances(instances):
 
 def connect_ssh_tunnel(jump_host, jump_port, identity, instances):
     click.echo(' * connecting to jump host ' + jump_host + ':' + jump_port)
+
     opts = []
+
+    call_ssh(jump_host, jump_port, identity, instances, opts)
+
+
+def connect_ssh_tunnel_trusted_channel(jump_host, jump_port, identity, instances):
+    click.echo(' * connecting to jump host ' + jump_host + ':' + jump_port)
+    click.echo('WARNING: THIS OPTION DOESN\'T RESPECT KNOWN_HOSTS')
+
+    opts = ['-o', 'ConnectTimeout 3', '-o', 'StrictHostKeyChecking no', '-o', 'UserKnownHostsFile /dev/null']
+
+    call_ssh(jump_host, jump_port, identity, instances, opts)
+
+
+def call_ssh(jump_host, jump_port, identity, instances, opts):
     for i in instances:
         opts += ['-i', identity, '-p', jump_port, '-L', '{ip}:{port}:{ip}:{port}'.format(ip=i.ip, port=i.port)]
+
     subprocess.call(['ssh'] + opts + [jump_host])
 
 
